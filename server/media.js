@@ -24,6 +24,7 @@ function proxy (input) {
 export default class MediaServer {
   client = null
   candidates = { }
+  elements = { }
 
   getClient () {
     if (this.client) {
@@ -38,20 +39,17 @@ export default class MediaServer {
     return client.create('MediaPipeline').then(proxy)
   }
 
-  async start(session, socket, offer) {
-    console.log(`server received SDP offer for ${session.id}`)
-    const sessionId = session.id
-
-    console.log(`building pipeline for ${session.id}`)
+  async start(stream, socket, offer) {
+    console.log(`building pipeline for ${stream}`)
     const pipeline = await this.createPipeline()
 
     try {
-      console.log('creating pipeline')
+      console.log('creating RTC endpoint')
       const endpoint = await pipeline.create('WebRtcEndpoint').then(proxy)
 
       console.log('creating recording endpoint')
       const recorder = await pipeline.create('RecorderEndpoint', { 
-        uri: `file:///tmp/${sessionId}.webm`,
+        uri: `file:///tmp/${stream}.webm`,
         mediaProfile: 'WEBM_VIDEO_ONLY'
       }).then(proxy)
 
@@ -59,9 +57,9 @@ export default class MediaServer {
         console.log(event)
       })
 
-      if (this.candidates[sessionId]) {
-        while (this.candidates[sessionId].length) {
-          const candidate = this.candidates[sessionId].shift()
+      if (this.candidates[stream]) {
+        while (this.candidates[stream].length) {
+          const candidate = this.candidates[stream].shift()
           endpoint.addIceCandidate(candidate)
         }
       }
@@ -92,9 +90,7 @@ export default class MediaServer {
       })
 
       const answer = await endpoint.processOffer(offer)
-      session.pipeline = pipeline
-      session.endpoint = endpoint
-      session.recorder = recorder
+      this.elements[stream] = { pipeline, endpoint, recorder }
 
       await endpoint.gatherCandidates()
 
@@ -106,33 +102,30 @@ export default class MediaServer {
     }
   }
 
-  async stop(session) {
-    console.log(`releasing pipeline for session ${session.id}`)
-    const pipeline = session.pipeline
-    const recorder = session.recorder
+  async stop(stream) {
+    console.log(`releasing pipeline for stream ${stream}`)
+    const { pipeline, recorder } = this.elements[stream]
     if (pipeline != null) {
       recorder.stop()
       pipeline.release()
     }
 
-    delete this.candidates[session.id]
-    delete session.pipeline
-    delete session.endpoint
-    delete session.recorder
+    delete this.candidates[stream]
+    delete this.elements[stream]
   }
 
-  async candidate(session, candidate) {
+  async candidate(stream, candidate) {
     const hydrated = kurento.getComplexType('IceCandidate')(candidate)
 
-    if (session.endpoint && session.pipeline) {
-      const endpoint = session.endpoint
+    if (this.elements[stream]) {
+      const { endpoint } = this.elements[stream]
       endpoint.addIceCandidate(hydrated)
     } else {
-      if (!this.candidates[session.id]) {
-        this.candidates[session.id] = []
+      if (!this.candidates[stream]) {
+        this.candidates[stream] = []
       }
 
-      this.candidates[session.id].push(hydrated)
+      this.candidates[stream].push(hydrated)
     }
   }
 }

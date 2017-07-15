@@ -30,22 +30,17 @@ export default {
     this.socket = socket
 
     window.addEventListener('devicemotion', this.handleMotion)
-
   },
   methods: {
     handleError (e) {
       console.error(e)
-    },
-    getStream () {
-      
-      return navigator.mediaDevices.getUserMedia(constraints)
     },
     handleMotion (e) {
       console.log(e)
     },
     async handleMessage (message) {
       const decoded = JSON.parse(message.data)
-      console.log(`CLIENT RECEIVED: ${decoded.type}`)
+      console.log(`client received '${decoded.type}' message`)
 
       switch (decoded.type) { 
         case 'start': {

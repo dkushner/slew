@@ -33,23 +33,27 @@ function dispatch () {
 
     socket.on('message', async (message) => {
       const decoded = JSON.parse(message)
-      console.log(`SERVER RECEIVED: ${decoded.type}`)
+      console.log(`server received '${decoded.type}' message`)
 
       switch (decoded.type) {
         case 'start': {
+          session.stream = uuid()
           try {
-            const answer = await media.start(session, socket, decoded.offer)
+            const answer = await media.start(session.stream, socket, decoded.offer)
             socket.send(JSON.stringify({ type: 'start', answer }))
           } catch (e) {
             return socket.send(JSON.stringify({ type: 'error', message: e }))
           }
         } break
         case 'stop':
-          await media.stop(session)
+          await media.stop(session.stream)
           break
         case 'candidate':
-          await media.candidate(session, decoded.candidate)
+          await media.candidate(session.stream, decoded.candidate)
           break
+        case 'motion': {
+
+        } break
         default:
           socket.send(JSON.stringify({
             type: 'error',
