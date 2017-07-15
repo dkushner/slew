@@ -1,0 +1,46 @@
+{
+  "name": "slew",
+  "version": "1.0.0",
+  "description": "Nuxt.js project",
+  "author": "David Kushner <dkushner@westfield.com>",
+  "private": true,
+  "scripts": {
+    "dev": "backpack dev",
+    "build": "nuxt build && backpack build",
+    "start": "cross-env NODE_ENV=production node build/main.js",
+    "precommit": "npm run lint",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore ."
+  },
+  "dependencies": {
+    "cross-env": "^5.0.0",
+    "koa": "^2.3.0",
+    "koa-body": "^2.3.0",
+    "koa-router": "^7.2.1",
+    "koa-session": "^5.4.0",
+    "koa-websocket": "^4.0.0",
+    "kurento-client": "^6.6.0",
+    "kurento-utils": "^6.6.2",
+    "node-sass": "^4.5.3",
+    "nuxt": "~1.0.0-alpha1",
+    "promise-redis": "0.0.5",
+    "pug": "^2.0.0-rc.2",
+    "pug-loader": "^2.3.0",
+    "purecss-sass": "^1.0.0",
+    "redis": "^2.7.1",
+    "sass-loader": "^6.0.6",
+    "source-map-support": "^0.4.15",
+    "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "backpack-core": "^0.3.0",
+    "eslint": "^3.13.1",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-html": "^2.0.3",
+    "eslint-plugin-promise": "^3.4.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "nodemon": "^1.11.0",
+    "scmp": "^2.0.0",
+    "webpack": "^3.2.0"
+  }
+}
