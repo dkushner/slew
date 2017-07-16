@@ -5,9 +5,7 @@
     .playback
       video(ref='playback', v-if='!denied', autoplay='')
     .controls
-      button.record(@touchstart.prevent='start', @touchend.prevent='stop', 
-                    @mousedown.prevent='start', @mouseup.prevent='stop', 
-                    @contextmenu.prevent='')
+      button.record(@click.prevent='toggle', @touch.prevent='toggle', @contextmenu.prevent='')
 </template>
 
 <script>
@@ -25,22 +23,41 @@ export default {
     }
   },
   async mounted () {
-    const socket = new WebSocket(`ws://${process.env.host}`)
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    this.recorders = devices.filter(device => device.kind === 'videoinput')
+    console.log(this.recorders)
+
+    const socket = new WebSocket(`wss://${process.env.host}`)
     socket.addEventListener('message', this.handleMessage)
     this.socket = socket
 
     window.addEventListener('devicemotion', this.handleMotion)
   },
   methods: {
-    handleError (e) {
-      console.error(e)
+    handleError (error) {
+      console.error(event)
     },
-    handleMotion (e) {
-      console.log(e)
+    toggle () {
+      if (this.state == IDLE) {
+        this.start()
+      } else {
+        this.stop()
+      }
+    },
+    handleMotion (event) {
+      if (this.state != STARTED)
+        return
+
+      const { acceleration, rotationRate, interval } = event
+      this.socket.send(JSON.stringify({
+        type: 'motion',
+        acceleration: [acceleration.x, acceleration.y, acceleration.z],
+        rotation: [rotationRate.alpha, rotationRate.beta, rotationRate.gamma],
+        interval
+      }))
     },
     async handleMessage (message) {
       const decoded = JSON.parse(message.data)
-      console.log(`client received '${decoded.type}' message`)
 
       switch (decoded.type) { 
         case 'start': {
@@ -82,7 +99,8 @@ export default {
           audio: false,
           video: {
             width: 1280,
-            height: 720
+            height: 720,
+            facingMode: 'environment'
           }
         }
       }
@@ -167,9 +185,9 @@ export default {
   align-items: center
 
 .record
-  width: 32vw
-  height: 32vw
-  border-radius: 16vw
+  width: 120px
+  height: 120px
+  border-radius: 60px
   border: none
   background: #fff
   outline: none

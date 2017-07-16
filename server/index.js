@@ -11,9 +11,9 @@ import websockify from 'koa-websocket'
 import Keystore from './keystore'
 import MediaServer from './media'
 
-const BIND = process.env.BIND || '127.0.0.1'
-const PORT = process.env.PORT || 3000
-const HOST = process.env.HOST || 'localhost:' + PORT 
+const SERVER_BIND = process.env.SERVER_BIND || '127.0.0.1'
+const SERVER_PORT = process.env.SERVER_PORT || 3000
+const SERVER_HOST = process.env.SERVER_HOST || 'localhost:' + SERVER_PORT 
 
 function dispatch () {
   const media = new MediaServer()
@@ -33,7 +33,6 @@ function dispatch () {
 
     socket.on('message', async (message) => {
       const decoded = JSON.parse(message)
-      console.log(`server received '${decoded.type}' message`)
 
       switch (decoded.type) {
         case 'start': {
@@ -49,10 +48,14 @@ function dispatch () {
           await media.stop(session.stream)
           break
         case 'candidate':
+
           await media.candidate(session.stream, decoded.candidate)
           break
         case 'motion': {
-
+          const acceleration = decoded.acceleration.join(',')
+          const rotation = decoded.rotation.join(',')
+          const line = [acceleration, rotation, decoded.interval].join(' ')
+          fs.appendFileSync(`${session.stream}.motion`, line + '\n')
         } break
         default:
           socket.send(JSON.stringify({
@@ -77,7 +80,7 @@ async function start () {
   // Import and Set Nuxt.js options
   let config = require('../nuxt.config.js')
   config.dev = !(app.env === 'production')
-  config.env = { host: HOST, ...config.env }
+  config.env = { host: SERVER_HOST, ...config.env }
 
   // Instanciate nuxt.js
   const nuxt = await new Nuxt(config)
@@ -126,8 +129,8 @@ async function start () {
   app.ws.use(sessions)
   app.ws.use(routes.routes())
 
-  app.listen(PORT, BIND)
-  console.log('Server listening on ' + HOST) // eslint-disable-line no-console
+  app.listen(SERVER_PORT, SERVER_BIND)
+  console.log(`Server listening on ${SERVER_BIND}:${SERVER_PORT}`) // eslint-disable-line no-console
 }
 
 start().catch(err => {
